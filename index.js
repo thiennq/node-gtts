@@ -62,6 +62,7 @@ const LANGUAGES = {
 }
 
 var lang, debug;
+
 function Text2Speech(_lang, _debug) {
   lang = _lang || 'en';
   debug = _debug || false;
@@ -72,19 +73,18 @@ function Text2Speech(_lang, _debug) {
 
   return {
     tokenize: tokenize,
-    stream: function (text) {
+    stream: function(text) {
       var text_parts = tokenize(text);
       var total = text_parts.length;
 
-      return MultiStream(text_parts.map(function (part, index) {
+      return MultiStream(text_parts.map(function(part, index) {
         var headers = getHeader();
         var args = getArgs(part, index, total);
         var fullUrl = GOOGLE_TTS_URL + args
 
-        if (self.debug) {
+        if (debug) {
           console.log(fullUrl);
         }
-
 
         return request({
           uri: fullUrl,
@@ -94,26 +94,28 @@ function Text2Speech(_lang, _debug) {
       }));
     },
 
-    save: function (filepath, text, callback) {
+    save: function(filepath, text, callback) {
       var text_parts = tokenize(text);
       var total = text_parts.length;
-      async.eachSeries(text_parts, function (part, cb) {
+      async.eachSeries(text_parts, function(part, cb) {
         var index = text_parts.indexOf(part);
         var headers = getHeader();
         var args = getArgs(part, index, total);
-        var fullUrl =GOOGLE_TTS_URL + args;
+        var fullUrl = GOOGLE_TTS_URL + args;
 
         if (debug) {
           console.log(fullUrl);
         }
 
-        var writeStream = fs.createWriteStream(filepath, { flags: index > 0 ? 'a' : 'w' });
+        var writeStream = fs.createWriteStream(filepath, {
+          flags: index > 0 ? 'a' : 'w'
+        });
         request({
-          uri: fullUrl,
-          headers: headers,
-          method: 'GET'
-        })
-        .pipe(writeStream);
+            uri: fullUrl,
+            headers: headers,
+            method: 'GET'
+          })
+          .pipe(writeStream);
         writeStream.on('finish', cb);
         writeStream.on('error', cb);
       }, callback);
@@ -144,7 +146,7 @@ function tokenize(text) {
     throw new Error('No text to speak');
 
   var punc = '¡!()[]¿?.,;:—«»\n ';
-  var punc_list = punc.split('').map(function (char) {
+  var punc_list = punc.split('').map(function(char) {
     return escapeStringRegexp(char);
   });
 
