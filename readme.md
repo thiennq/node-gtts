@@ -14,6 +14,7 @@ gtts.save(filepath, 'your text', callback);
 
 // pipe directly to router response
 app.get('/speech', function(req, res) {
+  res.set({'Content-Type': 'audio/mpeg'});
   gtts.stream(req.query.text).pipe(res);
 })
 ```
