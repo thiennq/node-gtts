@@ -9,7 +9,13 @@ npm install node-gtts
 ## How to use
 ```javascript
 const gtts = require('node-gtts')('en');
-ttsEn.save(filepath, 'your text', callback);
+gtts.save(filepath, 'your text', callback);
+
+
+// pipe directly to router response
+app.get('/speech', function(req, res) {
+  gtts.stream(req.query.text).pipe(res);
+})
 ```
 
 ## Example
