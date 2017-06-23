@@ -39,6 +39,16 @@ var gtts = require('node-gtts')('en');
 gtts.createServer(8668);
 ```
 
+### 4. Command line usage
+```bash
+# create file: helllo-world.wav
+node-gtts en Hello World
+
+# create server listen port 8668
+# (in English by default)
+node-gtts serve 8668 en
+```
+
 
 ## API for standalone server
 `GET /?text={your-text}`
