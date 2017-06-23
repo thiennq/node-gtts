@@ -61,67 +61,62 @@ const LANGUAGES = {
   'cy': 'Welsh'
 }
 
-var lang, debug;
-
 function Text2Speech(_lang, _debug) {
-  lang = _lang || 'en';
-  debug = _debug || false;
+  var lang = _lang || 'en';
+  var debug = _debug || false;
   lang = lang.toLowerCase();
 
   if (!LANGUAGES[lang])
     throw new Error('Language not supported: ' + lang);
 
+  var getArgs = getArgsFactory(lang);
+
   return {
     tokenize: tokenize,
-    stream: function(text) {
-      var text_parts = tokenize(text);
-      var total = text_parts.length;
-
-      return MultiStream(text_parts.map(function(part, index) {
-        var headers = getHeader();
-        var args = getArgs(part, index, total);
-        var fullUrl = GOOGLE_TTS_URL + args
-
-        if (debug) {
-          console.log(fullUrl);
-        }
-
-        return request({
-          uri: fullUrl,
-          headers: headers,
-          method: 'GET'
-        });
-      }));
-    },
-
-    save: function(filepath, text, callback) {
-      var text_parts = tokenize(text);
-      var total = text_parts.length;
-      async.eachSeries(text_parts, function(part, cb) {
-        var index = text_parts.indexOf(part);
-        var headers = getHeader();
-        var args = getArgs(part, index, total);
-        var fullUrl = GOOGLE_TTS_URL + args;
-
-        if (debug) {
-          console.log(fullUrl);
-        }
-
-        var writeStream = fs.createWriteStream(filepath, {
-          flags: index > 0 ? 'a' : 'w'
-        });
-        request({
-            uri: fullUrl,
-            headers: headers,
-            method: 'GET'
-          })
-          .pipe(writeStream);
-        writeStream.on('finish', cb);
-        writeStream.on('error', cb);
-      }, callback);
-    }
-
+    createServer: (port) => createServer(getArgs, port),
+    stream: (text) => stream(getArgs, text),
+    save: (filepath, text, callback) => save(getArgs, filepath, text, callback)
   }
+}
+
+function save(getArgs, filepath, text, callback) {
+  var text_parts = tokenize(text);
+  var total = text_parts.length;
+  async.eachSeries(text_parts, function(part, cb) {
+    var index = text_parts.indexOf(part);
+    var headers = getHeader();
+    var args = getArgs(part, index, total);
+    var fullUrl = GOOGLE_TTS_URL + args;
+
+    var writeStream = fs.createWriteStream(filepath, {
+      flags: index > 0 ? 'a' : 'w'
+    });
+    request({
+        uri: fullUrl,
+        headers: headers,
+        method: 'GET'
+      })
+      .pipe(writeStream);
+    writeStream.on('finish', cb);
+    writeStream.on('error', cb);
+  }, callback);
+}
+
+function stream(getArgs, text) {
+  var text_parts = tokenize(text);
+  var total = text_parts.length;
+
+  return MultiStream(text_parts.map(function(part, index) {
+    var headers = getHeader();
+    var args = getArgs(part, index, total);
+    var fullUrl = GOOGLE_TTS_URL + args
+
+    return request({
+      uri: fullUrl,
+      headers: headers,
+      method: 'GET'
+    });
+  }));
 }
 
 function getHeader() {
@@ -132,12 +127,13 @@ function getHeader() {
   return headers;
 }
 
-function getArgs(text, index, total) {
-  console.log('getArgs', text, index, total);
-  var textlen = text.length;
-  var encodedText = encodeURIComponent(text);
-  var language = lang || 'en';
-  return `?ie=UTF-8&tl=${language}&q=${encodedText}&total=${total}&idx=${index}&client=tw-ob&textlen=${textlen}`
+function getArgsFactory(lang){
+  return function (text, index, total) {
+    var textlen = text.length;
+    var encodedText = encodeURIComponent(text);
+    var language = lang || 'en';
+    return `?ie=UTF-8&tl=${language}&q=${encodedText}&total=${total}&idx=${index}&client=tw-ob&textlen=${textlen}`
+  }
 }
 
 function tokenize(text) {
@@ -169,6 +165,33 @@ function tokenize(text) {
   }
   output[0] = output[0].substr(1);
   return output;
+}
+
+function createServer(getArgs, port) {
+  var http = require("http");
+  var url = require('url');
+
+  var server = http.createServer(function(req, res) {
+    var queryData = url.parse(req.url, true).query;
+    var argsCallback = getArgs;
+    if (queryData && queryData.lang && LANGUAGES[queryData.lang]) {
+      argsCallback = getArgsFactory(queryData.lang);
+    }
+    if (queryData && queryData.text) {
+      res.writeHead(200, {'Content-Type': 'audio/mpeg'});
+      stream(argsCallback, queryData.text).pipe(res);
+    } else {
+      console.log(req.headers);
+      res.writeHead(200, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify({
+        code: -1,
+        message: `Missing text. Please try: ${req.headers.host}?text=your+text`
+      }))
+    }
+  });
+
+  server.listen(port);
+  console.log("Text-to-Speech Server running on " + port);
 }
 
 module.exports = Text2Speech;

@@ -7,24 +7,42 @@ npm install node-gtts
 ```
 
 ## How to use
+
+### 1. Save audio file
 ```javascript
-const gtts = require('node-gtts')('en');
-gtts.save(filepath, 'your text', callback);
+var gtts = require('node-gtts')('en');
+var path = require('path');
+var filepath = path.join(__dirname, 'i-love-you.wav');
 
+gtts.save(filepath, 'I love you', function() {
+  console.log('save done');
+})
+```
 
-// pipe directly to router response
-app.get('/speech', function(req, res) {
+### 2. Pipe directly to router response
+Example with ExpressJS Router
+
+```javascript
+var express = require('express');
+var router = express.Router();
+var gtts = require('node-gtts')('en');
+
+router.get('/speech', function(req, res) {
   res.set({'Content-Type': 'audio/mpeg'});
   gtts.stream(req.query.text).pipe(res);
 })
 ```
 
-## Example
+### 3. Create a standalone server
 ```javascript
 var gtts = require('node-gtts')('en');
-var path = require('path');
-var filepath = path.join(__dirname, 'i-love-you.wav');
-gtts.save(filepath, 'I love you', function() {
-  console.log('save done');
-})
+gtts.createServer(8668);
 ```
+
+
+## API for standalone server
+`GET /?text={your-text}`
++ stream audio of speech with default language
+
+`GET /?text={your-text}?lang={lang}`
++ stream audio of speech with specific language
