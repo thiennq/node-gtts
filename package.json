@@ -1,6 +1,6 @@
 {
   "name": "node-gtts",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Google Text-to-Speech for NodeJS (Unofficial API)",
   "main": "index.js",
   "scripts": {

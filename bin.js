@@ -5,8 +5,8 @@ const args = process.argv.splice(2);
 const path = require('path');
 
 if (args[0] == 'serve' || args[0] == 'server') {
-  var lang = args[1];
-  var port = parseInt(args[2]) || 8668;
+  var port = parseInt(args[1]) || 8668;
+  var lang = args[2];
   gtts(lang).createServer(port);
 } else {
   var lang = args[0];
