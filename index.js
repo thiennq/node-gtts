@@ -26,6 +26,7 @@ const LANGUAGES = {
   'en-uk': 'English (United Kingdom)',
   'en-us': 'English (United States)',
   'eo': 'Esperanto',
+  'et': 'Estonian',
   'fi': 'Finnish',
   'fr': 'French',
   'de': 'German',
